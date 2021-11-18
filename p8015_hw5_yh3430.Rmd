@@ -1,0 +1,107 @@
+---
+title: "p8015_hw5_yh3430"
+author: "Yu He"
+date: "11/11/2021"
+output: github_document
+---
+
+Load library
+```{r}
+library(tidyverse)
+library(rvest)
+```
+
+## Problem 1
+
+Let's import and clean the homicides data gathered by The Washington Post.
+
+```{r}
+homicide_df =
+  read_csv("homicide_data.csv", na = c("", "Unknown")) %>% 
+  janitor::clean_names() %>% 
+  mutate(
+    city_state = str_c(city, state),
+    resolution = case_when(
+      disposition == "Closed without arrest" ~ "unsolved",
+      disposition == "Open/No arrest" ~ "unsolved",
+      disposition == "Closed by arrest" ~ "solved"
+    )
+  ) %>% 
+  relocate(city_state) %>% 
+  filter(city_state != "TulsaAL")
+  
+```
+
+
+Focus on the Baltimore, MD
+
+```{r}
+baltimore_df =
+  homicide_df %>% 
+  filter(city_state == "BaltimoreMD")
+  
+baltimore_summary =
+  baltimore_df %>% 
+  summarize(
+    unsolved = sum(resolution == "unsolved"),
+    n = n()
+  )
+
+prop.test(
+  x = baltimore_summary %>% pull(unsolved),
+  n = baltimore_summary %>% pull(n)
+)
+
+```
+
+
+
+
+
+
+
+
+## Problem 2
+
+```{r}
+
+```
+
+
+
+## Problem 3
+
+load the dataset
+
+```{r}
+library(tidyverse)
+
+set.seed(10)
+
+iris_with_missing = iris %>% 
+  map_df(~replace(.x, sample(1:150, 20), NA)) %>%
+  mutate(Species = as.character(Species))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
