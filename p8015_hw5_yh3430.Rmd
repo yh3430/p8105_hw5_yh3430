@@ -47,25 +47,144 @@ baltimore_summary =
     n = n()
   )
 
-prop.test(
+baltimore_test =
+  prop.test(
   x = baltimore_summary %>% pull(unsolved),
   n = baltimore_summary %>% pull(n)
 )
 
+baltimore_test %>% 
+  broom::tidy()
 ```
 
+Let's try to iterate for all cities - 'function' to 'map'
+Function for sample cities.
 
+```{r}
+prop_test_function = function(city_df){
+  
+  city_summary =
+  city_df %>% 
+  summarize(
+    unsolved = sum(resolution == "unsolved"),
+    n = n()
+  )
 
+  city_test =
+    prop.test(
+    x = city_summary %>% pull(unsolved),
+    n = city_summary %>% pull(n)
+  )
 
+  return(city_test)
+ 
+}
 
+prop_test_function(baltimore_df)
 
+homicide_df %>% 
+  filter(city_state == "AlbuquerqueNM") %>% 
+  prop_test_function()
+```
+
+Let's work on all cities - 'map"
+
+```{r}
+results_df = 
+  homicide_df %>% 
+  nest(data = uid:resolution) %>% 
+  mutate(
+    test_result = map(data, prop_test_function),
+    tidy_result = map(test_result, broom::tidy)
+  ) %>% 
+  select(city_state, tidy_result) %>% 
+  unnest(tidy_result) %>% 
+  select(city_state, estimate, starts_with("conf"))
+
+```
+
+Makes a plot about estimate and CIs for all cities
+
+```{r}
+results_df %>% 
+  mutate(
+    city_state = fct_reorder(city_state, estimate)
+  ) %>% 
+  ggplot(aes(x = city_state, y = estimate)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+```
+
+ideas about summarize within cities to obtain the total number of homicides and the number of unsolved homicides
+
+```{r}
+homicide_df %>% 
+  group_by(city_state) %>% 
+  summarize(
+    unsolved = sum(resolution == "unsolved"),
+    n = n()
+  ) %>% 
+  mutate(
+    test_result = map2(unsolved, n, prop.test),
+    tidy_result = map(test_result, broom::tidy)
+  ) %>% 
+  select(city_state, tidy_result) %>% 
+  unnest(tidy_result) %>% 
+  select(city_state, estimate, starts_with("conf"))
+```
 
 
 ## Problem 2
 
+Step 1 - Using 'map' import data of participants. create a variable that contain the imported file (list - iteration)
+
 ```{r}
 
+study_df = 
+   tibble(
+    files = list.files("./data")
+  ) %>% 
+  mutate(
+    files = list.files("./data", pattern = ".csv", full.names = TRUE),
+    study_result = map(set_names(files), read_csv)
+  ) %>% 
+  unnest()
+
 ```
+
+Step 2 - data manipulation, add a variable indicate the study arm, tidy the data.
+
+```{r}
+study_data =
+  study_df %>% 
+  mutate(
+    files = str_sub(files, 8, 13)
+  ) %>% 
+  mutate(
+    study_arm = str_sub(files, 1, 3),
+    study_arm = recode(study_arm, "con" = "control", "exp" = "experiment")
+    ) %>% 
+  relocate(study_arm) %>% 
+  pivot_longer(
+    week_1:week_8,
+    names_to = "week",
+    values_to = "value"
+  )
+  
+```
+
+Step 3 - making the spaghetti plot of subjects over time. 
+
+```{r}
+study_data %>% 
+  ggplot(aes(x = week, y = value, group = study_arm, color = files)) +
+    geom_path() + 
+    labs(caption = "Observations on each subject over time") + 
+    viridis::scale_color_viridis(
+      discrete = TRUE) 
+```
+
 
 
 
@@ -83,6 +202,10 @@ iris_with_missing = iris %>%
   mutate(Species = as.character(Species))
 ```
 
+
+```{r}
+
+```
 
 
 
