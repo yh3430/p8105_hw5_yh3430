@@ -214,17 +214,46 @@ set.seed(10)
 
 iris_with_missing = iris %>% 
   map_df(~replace(.x, sample(1:150, 20), NA)) %>%
-  mutate(Species = as.character(Species))
+  mutate(Species = as.character(Species)) %>% 
+  janitor::clean_names()
+```
+
+start with a function
+
+```{r}
+fill_in_missing = function(missing_value) {
+  
+  if (is.numeric(missing_value)) {
+    missing_value[is.na(missing_value)] <- mean(missing_value, na.rm = TRUE)
+    }
+  
+  if (is.character(missing_value)) {
+    missing_value[is.na(missing_value)] <- "Virginica"
+  }
+  
+  return(missing_value)
+  
+}
 ```
 
 
+Let's try the function
+
+```{r}
+
+fill_in_missing(pull(iris_with_missing, sepal_length))
+```
+
+Let's use the iteration - ' map'
 
 
+```{r}
+iris_without_missing = 
+  map_dfr(iris_with_missing, fill_in_missing) %>% 
+  unnest(species)
 
-
-
-
-
+iris_without_missing
+```
 
 
 
