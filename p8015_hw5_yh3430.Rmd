@@ -159,13 +159,14 @@ Step 2 - data manipulation, add a variable indicate the study arm, tidy the data
 study_data =
   study_df %>% 
   mutate(
-    files = str_sub(files, 8, 13)
+    subject_id = str_sub(files, 8, 13)
   ) %>% 
   mutate(
-    study_arm = str_sub(files, 1, 3),
+    study_arm = str_sub(subject_id, 1, 3),
     study_arm = recode(study_arm, "con" = "control", "exp" = "experiment")
     ) %>% 
-  relocate(study_arm) %>% 
+  relocate(study_arm, subject_id) %>% 
+  select(-files) %>% 
   pivot_longer(
     week_1:week_8,
     names_to = "week",
@@ -176,15 +177,29 @@ study_data =
 
 Step 3 - making the spaghetti plot of subjects over time. 
 
+The figure. 1 is the comparison between two study groups, which shows that the overall study results of experiment groups are significantly low than the study results of control groups. In addition, the overall trend of experiment groups remain roughly steady. And the overall trend of control group increases as the study week goes. 
+
 ```{r}
 study_data %>% 
-  ggplot(aes(x = week, y = value, group = study_arm, color = files)) +
+  ggplot(aes(x = week, y = value, group = subject_id, color = study_arm)) +
     geom_path() + 
-    labs(caption = "Observations on each subject over time") + 
+    labs(
+      title = "figure. 1 comparison between two study groups",
+      caption = "Observations on each subject over time") + 
     viridis::scale_color_viridis(
       discrete = TRUE) 
 ```
 
+```{r}
+study_data %>% 
+  ggplot(aes(x = week, y = value, group = study_arm, color = subject_id)) +
+    geom_path() + 
+    labs(
+      title = "figure. 2 comparison of each study participants",
+      caption = "Observations on each subject over time") + 
+    viridis::scale_color_viridis(
+      discrete = TRUE)
+```
 
 
 
@@ -201,14 +216,6 @@ iris_with_missing = iris %>%
   map_df(~replace(.x, sample(1:150, 20), NA)) %>%
   mutate(Species = as.character(Species))
 ```
-
-
-```{r}
-
-```
-
-
-
 
 
 
